@@ -219,7 +219,7 @@ freely; they stay on your machine and never look like a note change.
 | `object <list\|show\|delete>` | Record-level plumbing for repairing broken notes: list every raw CloudKit record in your Notes zone with health/reference info, inspect one record in full, or permanently delete one by ID. Run `icloud-md object` with no arguments for the full usage. |
 | `reauthenticate [directory]` | Force a fresh sign-in for a directory's already-bound account. Useful if a session goes stale and silent recovery can't get back in on its own. Refuses if you sign into a different Apple ID than the one the directory was cloned for. |
 | `verify-auth [directory]` | Check whether a directory's bound account session is still valid. |
-| `bug-report --since <duration> [directory]` | Bundle version info, the last error, local sync state, and recent debug-log entries into a file to attach to a GitHub issue (e.g. `--since 2h`). |
+| `bug-report --since <duration> [directory]` | Bundle version info, the last error, local sync state, and recent debug-log entries into a file to attach to a GitHub issue (e.g. `--since 2h`). `--note <file>` narrows it to one note; `--no-state` leaves the sync-state inventory out. |
 
 No `commit`/`branch`/`merge` equivalents exist — the working directory *is*
 the local state, and the git repo you presumably wrapped around it (or the
@@ -533,6 +533,21 @@ icloud-md bug-report --since <duration>
 
 This will generate a markdown document outlining the state
 of your note clone as well as any recent log messages.
+
+If the problem is in one particular note, narrow the export to it:
+
+```bash
+icloud-md bug-report --since 10m --note "My Note.md"
+```
+
+`--note` (repeatable) keeps only that note's entry in the local-state section,
+along with the folders it sits in and the attachments it owns, and removes
+every record about any other note from the captured log entries before they
+are bundled; the report says how many were left out. This is the export to
+generate when the problem showed up on a fresh `clone`, where an unscoped one
+would carry every note in the account. If the problem isn't about any
+particular note at all (a rate limit, a network error), `--no-state` leaves
+the state inventory out entirely and bundles only the log slice.
 
 > [!WARNING]
 > The bug report intends to remove the most dangerous of PII
