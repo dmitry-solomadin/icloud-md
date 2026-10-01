@@ -27,10 +27,10 @@ test("a blank line between the closing fence and the title is folded into the en
   assert.equal(split.body, "# Title\nbody");
 });
 
-test("multiple blank lines after the fence all belong to the envelope", () => {
+test("only one blank line after the fence belongs to the envelope", () => {
   const split = assertLossless("---\nx: 1\n---\n\n\n# Title");
-  assert.equal(split.frontmatter, "---\nx: 1\n---\n\n\n");
-  assert.equal(split.body, "# Title");
+  assert.equal(split.frontmatter, "---\nx: 1\n---\n\n");
+  assert.equal(split.body, "\n# Title");
 });
 
 test("a file that is only frontmatter has an empty body", () => {
@@ -146,14 +146,11 @@ test("splitFrontmatter is the exact inverse of joinFrontmatter for a body starti
   }
 });
 
-test("an in-body vault still folds every blank line under the envelope", () => {
-  // Kept deliberately: there the body starts with the note's title line, so
-  // there is nothing a greedy fold can eat - and blank lines a user left under
-  // their frontmatter stay cosmetic instead of becoming empty paragraphs
-  // pushed to the top of the note.
+test("an in-body vault preserves leading empty paragraphs under the separator", () => {
+  // A nonempty display title does not imply a nonempty first text paragraph.
   const text = "---\ntags: [a]\n---\n\n\n\nMy Note\nBody";
 
   const split = splitFrontmatter(text);
 
-  assert.equal(split.body, "My Note\nBody");
+  assert.equal(split.body, "\n\nMy Note\nBody");
 });
