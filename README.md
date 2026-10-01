@@ -1,3 +1,12 @@
+> **omanb integration fork:** the `omanb` branch combines the fixes proposed in
+> upstream discussions [#41](https://github.com/coddingtonbear/icloud-md/discussions/41)
+> and [#42](https://github.com/coddingtonbear/icloud-md/discussions/42).
+> Each fix is maintained on its own `fix/*` branch for upstream PRs; `main`
+> tracks upstream. Versioned npm tarballs are published as GitHub release assets
+> at [dmitry-solomadin/icloud-md](https://github.com/dmitry-solomadin/icloud-md/releases),
+> not to the npm registry. Build with `npm install` and `npm run build`, then
+> package with `npm pack`. This build identifies itself as `0.6.2-omanb.1`.
+
 Apple Notes only lives one place: Notes.app or the iCloud web client. There
 is no export, API, or any easy way to read or edit your own notes from anywhere else.
 `icloud-md` frees them from icloud by turning your Apple Notes into a folder

@@ -5,7 +5,7 @@ import { getEnvironmentInfo } from "./version.js";
 test("getEnvironmentInfo reports this install's package version and the running environment", () => {
   const info = getEnvironmentInfo();
 
-  assert.match(info.toolVersion, /^\d+\.\d+\.\d+$/);
+  assert.match(info.toolVersion, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
   assert.equal(info.nodeVersion, process.version);
   assert.equal(info.platform, process.platform);
   assert.ok(info.osRelease.length > 0);
