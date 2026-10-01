@@ -27,7 +27,7 @@ const FENCE = "---";
 export interface SplitMarkdown {
   /**
    * The leading frontmatter envelope: the `---` fences, the YAML between
-   * them, and any blank lines that separate the block from the body - stored
+   * them, and at most one blank separator line before the body - stored
    * verbatim (including its trailing newline) so re-writing preserves the
    * user's exact formatting. Empty string when the file has no frontmatter.
    * Invariant: `frontmatter + body` reproduces the original text exactly.
@@ -45,11 +45,9 @@ export interface SplitMarkdown {
 export interface SplitFrontmatterOptions {
   /**
    * Set in a filename-as-title vault, where the file holds the note's *body*
-   * alone. Two of this module's assumptions stop holding there, because both
-   * were really assumptions about the body beginning with the note's title
-   * line: the body may legitimately open with a `---` thematic break, and it
-   * may legitimately open with blank lines. See both guards in
-   * `splitFrontmatter`.
+   * alone. It may open with a `---` thematic break, which must not be
+   * mistaken for a frontmatter envelope. Leading blank lines are preserved
+   * in both title modes: even an in-body note can have an empty first line.
    */
   filenameAsTitle?: boolean;
 }
@@ -96,29 +94,16 @@ export function splitFrontmatter(text: string, options: SplitFrontmatterOptions 
 
   // Fold the cosmetic separator into the envelope.
   //
-  // Exactly one blank line in a filename-as-title vault, because there a body
-  // legitimately begins with blank lines: Apple's editors leave an empty
-  // paragraph under a note's title, and once the title is in the file *name*
-  // that empty paragraph is the body's own first line. Folding greedily ate
-  // it, so every such note's file compared unequal to its base copy and read
-  // as modified from the moment it was cloned - and each pull re-joined the
-  // over-long envelope with the body, growing the file by a blank line a run.
-  // One is also exactly what `joinFrontmatter` writes, which is what makes
-  // the two functions genuine inverses.
-  //
-  // Everywhere else the body starts with the note's title line, so there is
-  // nothing a greedy fold can consume - and greedy is kept there so that
-  // blank lines a user left under their frontmatter stay cosmetic rather than
-  // becoming empty paragraphs pushed to the top of the note.
+  // At most one blank separator, matching the envelope composeNoteFile
+  // creates. A note's own text can start blank in either title mode. In an
+  // in-body vault Apple can display a nonempty TitleEncrypted even when the
+  // actual text starts with an empty line (and is exported as Untitled.md).
+  // Folding greedily made that untouched export differ from its base copy
+  // and pushed away its leading empty paragraph. Additional blank lines are
+  // content, including when a user intentionally adds or removes them.
   let envelopeEnd = closingFence;
-  if (options.filenameAsTitle === true) {
-    if (lines[envelopeEnd + 1] === "") {
-      envelopeEnd += 1;
-    }
-  } else {
-    while (envelopeEnd + 1 < lines.length && lines[envelopeEnd + 1] === "") {
-      envelopeEnd += 1;
-    }
+  if (lines[envelopeEnd + 1] === "") {
+    envelopeEnd += 1;
   }
 
   const bodyLines = lines.slice(envelopeEnd + 1);

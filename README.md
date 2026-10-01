@@ -286,7 +286,12 @@ resolution live.
   Obsidian tags, aliases, and the like) is treated as local metadata: it's
   skipped when deriving the note's title (the title is the first line *after*
   the frontmatter) and preserved across `pull`/`push`, so editing it never
-  looks like a note change. See Known limitations for the catch.
+  looks like a note change. At most one blank line after the closing fence
+  is metadata spacing; additional blank lines belong to the note in either
+  vault shape. This preserves empty first paragraphs on untouched exports.
+  In default in-body vaults, older versions ignored all of those blank lines;
+  extra spacing previously added there is now treated as note content.
+  See Known limitations for the catch.
 - **Two vault shapes.** A vault carries note titles either in each file's
   first line (the default) or in its file name (`clone
   --filename-as-title`, for Obsidian and friends). See

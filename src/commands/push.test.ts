@@ -6,6 +6,7 @@ import path from "node:path";
 import { readBaseCopy, writeBaseCopy } from "../notes/baseCopy.js";
 import { writeCloneState, type CloneState } from "../notes/cloneState.js";
 import { localFileState } from "../notes/localFileState.js";
+import { composeNoteFile } from "../notes/noteIdFrontmatter.js";
 import { NotClonedDirectoryError, UnboundAccountError } from "../errors.js";
 import { buildPushPlan, planRemoteChangedMerge, runPush } from "./push.js";
 
@@ -642,6 +643,41 @@ test("runPush returns no entries and a zero pushed count when the plan is empty"
 
     assert.deepEqual(result, { dryRun: false, pushed: 0, entries: [], unchanged: 1, notices: [] });
   }));
+
+for (const titleMode of ["in-body", "filename"] as const) {
+  for (const leadingLines of [0, 1, 2]) {
+    test(`an untouched ${titleMode} export with ${leadingLines} leading blank lines never uploads`, () =>
+      withTempDir(async (dir) => {
+        const s = idState();
+        s.titleMode = titleMode;
+        const body = "\n".repeat(leadingLines) + "A synthetic note";
+        // Use the same writer/base-copy pair as clone; no account is bound,
+        // so a spurious upload candidate fails before any network access.
+        const file = composeNoteFile("", body, NOTE_ID);
+        await writeBaseCopy(dir, NOTE_ID, body);
+        await writeVaultFile(dir, "Notes/Tracked.md", file);
+        await writeCloneState(dir, s);
+
+        assert.equal(await localFileState(dir, s.notes[NOTE_ID]!, NOTE_ID, titleMode), "clean");
+        const result = await runPush(dir);
+        assert.deepEqual(result, { dryRun: false, pushed: 0, entries: [], unchanged: 1, notices: [] });
+        assert.equal(await readFile(path.join(dir, "Notes/Tracked.md"), "utf-8"), file);
+        assert.equal(await readBaseCopy(dir, NOTE_ID), body);
+      }));
+  }
+
+  test(`removing a leading blank line in ${titleMode} remains a real edit`, () =>
+    withTempDir(async (dir) => {
+      const s = idState();
+      s.titleMode = titleMode;
+      await writeBaseCopy(dir, NOTE_ID, "\nA synthetic note");
+      await writeVaultFile(dir, "Notes/Tracked.md", composeNoteFile("", "A synthetic note", NOTE_ID));
+      await writeCloneState(dir, s);
+
+      assert.equal(await localFileState(dir, s.notes[NOTE_ID]!, NOTE_ID, titleMode), "modified");
+      await assert.rejects(() => buildPushPlan(dir), UnboundAccountError);
+    }));
+}
 
 // --- id-in-frontmatter pairing -------------------------------------------
 //
