@@ -129,6 +129,34 @@ test("isFullySignedInBody rejects bodies without account info", () => {
   assert.equal(isFullySignedInBody({ success: true }), false);
 });
 
+test("isFullySignedInBody rejects account info while updated terms are pending", () => {
+  // Minimal response using the flags observed before terms acceptance;
+  // account and service values are synthetic (upstream discussion #41).
+  assert.equal(
+    isFullySignedInBody({
+      dsInfo: { appleId: "me@example.com", dsid: "1234" },
+      hsaChallengeRequired: false,
+      termsUpdateNeeded: true,
+      webservices: { ckdatabasews: { url: "https://p43-ckdatabasews.icloud.com:443" } },
+    }),
+    false,
+  );
+});
+
+test("isFullySignedInBody accepts a response with no pending terms update", () => {
+  assert.equal(
+    isFullySignedInBody({ dsInfo: { dsid: "1234" }, termsUpdateNeeded: false }),
+    true,
+  );
+});
+
+test("cleared terms do not bypass a pending 2FA challenge", () => {
+  assert.equal(
+    isFullySignedInBody({ dsInfo: { dsid: "1234" }, termsUpdateNeeded: false, hsaChallengeRequired: true }),
+    false,
+  );
+});
+
 test("isMissingChromiumError matches Playwright's own missing-executable message", () => {
   assert.equal(
     isMissingChromiumError(new Error("Executable doesn't exist at /home/user/.cache/ms-playwright/chromium-1234/chrome")),

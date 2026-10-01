@@ -45,7 +45,7 @@ const SETUP_SUCCESS_PATTERN = /^https:\/\/setup\.icloud\.com\/setup\/ws\/1\/(acc
 
 /**
  * True only for a *fully* signed-in accountLogin/validate response body: the
- * account info is present and no 2FA challenge is still pending. The partial
+ * account info is present and neither 2FA nor updated terms are pending. The partial
  * (pre-2FA) response otherwise looks deceptively complete - it even includes
  * the `webservices.ckdatabasews` entry - so `hsaChallengeRequired` is the
  * discriminator, not any of the fields we actually consume.
@@ -54,7 +54,14 @@ export function isFullySignedInBody(body: unknown): boolean {
   if (!isPlainRecord(body) || !isPlainRecord(body.dsInfo)) {
     return false;
   }
-  return body.hsaChallengeRequired !== true && body.dsInfo.hsaChallengeRequired !== true;
+  // Account info alone is also insufficient when Apple requires updated terms.
+  // Keep the browser open so the user can review them instead of capturing a
+  // session before Apple has issued its web authentication cookie.
+  return (
+    body.hsaChallengeRequired !== true &&
+    body.dsInfo.hsaChallengeRequired !== true &&
+    body.termsUpdateNeeded !== true
+  );
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
